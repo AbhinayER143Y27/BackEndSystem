@@ -1,0 +1,82 @@
+Part 1:
+
+public static void main(String[] args) {
+            // 1. Tell the OS to open port 8080
+            try (ServerSocket serverSocket = new ServerSocket(8080)) {  //In here the new ServerSocket(8000) means that the intelij has told the os to lock down the 8000 and what ever thing comes there you are gonna send it here
+                System.out.println("Engine started. Listening on port 8080...");
+
+                // 2. An HTTP server must run forever, waiting for incoming traffic
+                while (true) {
+                    // 3. This line freezes execution until a browser connects
+                    Socket clientSocket = serverSocket.accept(); // when the req comes a socket object is handed to us . as this acts as a physical wire between the app and the users browser.
+                    System.out.println("Connection established with a client!");
+
+                    // If the code is till here only and then run , on the browser the link is placed then it will simply say that the
+                    // connection is established with a client! as above even though there is nothing on the page.
+
+
+
+Why is the browser blank and spinning? Because you completed the TCP Handshake.
+You opened a physical telephone line between your operating system and Chrome.
+Chrome connected, shouted "Hey! Give me the webpage!" across the wire, and then waited for your response.
+Because your code stops right after accept(), your program just stood there breathing into the receiver in absolute silence.
+The browser will spin indefinitely until its internal timer runs out and it throws a ERR_EMPTY_RESPONSE crash.
+
+
+
+Part 2:
+
+getInputStream - This gives us a 1 and 0s file nothing more and nothing less
+InputStreamReader - This will convert the byte stream into a character stream.
+InputStreamReader - This is to convert the 0 and 1 into human readable form.
+BufferedReader - This wraps the character stream into effecient and easy to use.
+
+((line = reader.readLine()) != null && !line.isEmpty() - The line should not be empty as the broswer will send a blank line to end the message
+if that is not done then the reader.readLine will freeze the application.
+ this got repeatted many time : GET / HTTP/1.1
+                                Host: localhost:8080
+                                Connection: keep-alive
+                                Cache-Control: max-age=0
+                                sec-ch-ua: "Not;A=Brand";v="8", "Chromium";v="150", "Google Chrome";v="150"
+                                sec-ch-ua-mobile: ?0
+                                sec-ch-ua-platform: "macOS"
+                                Upgrade-Insecure-Requests: 1
+                                User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+                                Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+                                Sec-Fetch-Site: none
+                                Sec-Fetch-Mode: navigate
+                                Sec-Fetch-User: ?1
+                                Sec-Fetch-Dest: document
+                                Accept-Encoding: gzip, deflate, br, zstd
+                                Accept-Language: en-US,en;q=0.9,hi;q=0.8
+                                Connection established with a client!
+
+
+BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
+                    // 1. Get the InputStream from clientSocket.
+                    // 2. Wrap it in an InputStreamReader and then a BufferedReader.
+                    String line;
+                    while((line = reader.readLine()) != null && !line.isEmpty())
+                    {
+                        System.out.println(line);
+                    }
+
+
+after this there were two observation it says that the local host didnot sent any data but ususally it say :
+        This site couldn;t be reached
+        Checking the connection
+        Checking the proxy and the firewall
+
+
+Part B:
+    String response = "HTTP/1.1 200 OK\r\n" +
+                      "Content-Type: text/plain\r\n" +
+                      "\r\n" +
+                      "Hello from Abhinay's Raw Engine! The socket works!";
+    The response must contains a Status Line , a Header , a mandatory balnk line,and your body.
+     The \r\n is a network standard from the http as to separate the lines, even though the \n i sthe standard for the linx and the macOs but still the Http has marked this
+     as the official.
+     \r\n means CRL which means the carrage return and the line feed
+this \r\n must exist between the header and the body, as the browser reads and sees these two lines it stops looking for the header and simply treat everything after that as a body
+The output.write(response.getBytes()); - this converts teh java string into raw bytes(0 and 1);

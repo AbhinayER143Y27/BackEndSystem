@@ -1,0 +1,63 @@
+//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
+// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+import java.io.*;
+import java.net.*;
+
+    public class Main {
+        public static void main(String[] args) {
+            // 1. Tell the OS to open port 8080
+            try (ServerSocket serverSocket = new ServerSocket(8080)) {  //In here the new ServerSocket(8000) means that the intelij has told the os to lock down the 8000 and what ever thing comes there you are gonna send it here
+                System.out.println("Engine started. Listening on port 8080...");
+
+                // 2. An HTTP server must run forever, waiting for incoming traffic
+                while (true) {
+                    // 3. This line freezes execution until a browser connects
+                    Socket clientSocket = serverSocket.accept(); // when the req comes a socket object is handed to us . as this acts as a physical wire between the app and the users browser.
+                    System.out.println("Connection established with a client!");
+
+                    // If the code is till here only and then run , on the browser the link is placed then it will simply say that the
+                    // connection is established with a client! as above even though there is nothing on the page.
+
+                    // =========================================================
+                    // YOUR ENGINEERING TASK STARTS HERE:
+                    // =========================================================
+
+                    // STEP A: Read the incoming HTTP Request
+                    //step A: To read the incomming HTTP Request so that one can know what the browser is sending to the terminal
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
+                    // 1. Get the InputStream from clientSocket.
+                    // 2. Wrap it in an InputStreamReader and then a BufferedReader.
+                    String line;
+                    while((line = reader.readLine()) != null && !line.isEmpty())
+                    {
+                        System.out.println(line);
+                    }
+                    // 3. Write a while-loop using reader.readLine() to print out
+                    //    everything the browser sent to your IntelliJ terminal.
+                    //    (Hint: An HTTP request header ends when it sends an empty line "").
+
+                    // STEP B: Write the outgoing HTTP Response
+                    OutputStream output = clientSocket.getOutputStream();
+                    String response = "HTTP/1.1 200 OK\r\n" +
+                            "Content-Type: text/plain\r\n" +
+                            "\r\n" +
+                            "Hello from Abhinay's Raw HTTP engine! The socket works";
+
+                    output.write(response.getBytes());
+                    // 1. Get the OutputStream from clientSocket.
+                    // 2. Construct a raw HTTP string. It MUST look exactly like this:
+                    //    "HTTP/1.1 200 OK\r\n\r\nHello from Abhinay's Raw Server!"
+                    //    (Note: \r\n\r\n is the mandatory HTTP blank line separating headers from body).
+                    // 3. Convert that string to bytes using .getBytes() and write it to the OutputStream.
+                    output.flush();
+                    // 4. Call .flush() on the OutputStream to force the bytes down the network wire.
+
+                    // STEP C: Close the clientSocket so the browser knows the response is finished.
+                    clientSocket.close();
+                }
+            } catch (IOException e) {
+                System.err.println("Server crashed: " + e.getMessage());
+            }
+        }
+    }
