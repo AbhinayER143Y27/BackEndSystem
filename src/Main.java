@@ -1,3 +1,5 @@
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.*;
 import java.util.Base64;
@@ -20,6 +22,30 @@ public class Main
                 " \"uptime\": "+ obj.uptimeMillis + "\n"+
                 "}";
     }
+    // This is the JWT engine so that the token authentication could take place and a random person on the search bar cannot access the admin panel just by entering '/'.
+    static class JwtEngine
+    {
+        // This is not a production so we are using a hardcoded secret Key for the physics.
+        private static final String SECRET_KEY = "AbhinaysSuperKeyForRawEngine";
+
+        public static String generateToken(String username) throws Exception{
+            //step A - The header algo
+            String header = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";// hs256 is the algo being used
+            //step B - Payload which contains teh users data
+            String payload = "{\"sub\":\"" + username + "\",\"role\":\"admin\"}"; // this is the actual users data
+            //Step c - Base64URl encode both strings, this is not a encoding procedure just a network transport safety anyone can decode this.
+            String encodedHeader = Base64.getUrlEncoder().withoutPadding().encodeToString(header.getBytes());
+            String encodedPayload = Base64.getUrlEncoder().withoutPadding().encodeToString(payload.getBytes());
+
+            String unsignedToken = encodedHeader + "." + encodedPayload;
+            Mac mac = Mac.getInstance("HmacSHA256"); // This is the hashing engine
+            SecretKeySpec secretKeySpec = new SecretKeySpec(SECRET_KEY.getBytes(),"HmacSHA256");// glued string and secret key to this and an irreversible signature will be given to us.
+            mac.init(secretKeySpec);
+            byte[] signatureBytes = mac.doFinal(unsignedToken.getBytes());
+            String encodedSignature = Base64.getUrlEncoder().withoutPadding().encodeToString(signatureBytes);
+            return unsignedToken + "." + encodedSignature;
+        }
+    }
     public static void main(String[] args)
     {
         try(ServerSocket serverSocket = new ServerSocket(8080))
@@ -30,7 +56,7 @@ public class Main
                 Socket clientSocket = serverSocket.accept();//Freeze teh execution until the browser connects
                 System.out.println("Connection Established with the client...");
 
-                //step A: To read the incomming HTTP Request so that one can know what the browser is sending to the terminal
+                //step A: To read the incoming HTTP Request so that one can know what the browser is sending to the terminal
                 BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
                 //This is for the Dynamic Dispatcher way
@@ -45,14 +71,23 @@ public class Main
                 String method = requestParts[0];
                 String path = requestParts[1];
 
-                String Line;
-                while((Line = reader.readLine()) != null && !Line.isEmpty())
+                String authorizationHeader = null;
+                String line;
+                while((line = reader.readLine()) != null && !line.isEmpty())
                 {
-                    System.out.println(Line);
+                    System.out.println(line);
+                    if(line.startsWith("Authorization: Bearer "))
+                    {
+                        authorizationHeader = line.substring(22);
+                    }
+                }
+                if(authorizationHeader != null)
+                {
+                    System.out.println(">>> TOKEN INTERCEPTED: " + authorizationHeader);
                 }
                 //Step B : Write the outgoing HTTP response
                 OutputStream output = clientSocket.getOutputStream();
-                String response;
+                String response = "";
                 if(path.equals("/")){
                     response = "HTTP/1.1 200 OK\r\n" +
                             "Content-Type: text/plain\r\n"+
@@ -77,6 +112,20 @@ public class Main
                             "Content-Type: application/json\r\n" +
                             "\r\n" +
                             jsonBody;
+                }
+                else if(path.equals("/api/login"))  //This is the keymaker.
+                {
+                    try{
+                        String rawToken = JwtEngine.generateToken("abhinay_rana");
+                        response = "HTTP/1.1 200 OK\r\n" +
+                                "Content-Type: text/plain\r\n" +
+                                "\r\n" +
+                                rawToken;
+                    }
+                    catch(Exception e)
+                    {
+                        response = "HTTP/1.1 500 Internal Server Error\r\n\r\nCrypto Engine Failed.";
+                    }
                 }
                 else {
                     response = "HTTP/1.1 404 Not Found\r\n" +
