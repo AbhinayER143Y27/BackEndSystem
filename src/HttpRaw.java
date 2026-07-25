@@ -6,22 +6,6 @@ import java.util.Base64;
 
 public class HttpRaw {
 
-    // Internal data structure for server status
-    static class ServerStatus {
-        String status = "Engine Operational";
-        String version = "1.0";
-        long uptimeMillis = System.currentTimeMillis();
-    }
-
-    // Converts Java Object to JSON format
-    private static String toJson(ServerStatus obj) {
-        return "{\n" +
-                " \"status\": \"" + obj.status + "\",\n" +
-                " \"version\": \"" + obj.version + "\",\n" +
-                " \"uptime\": " + obj.uptimeMillis + "\n" +
-                "}";
-    }
-
     // JWT Engine for authentication
     static class JwtEngine {
         private static final String SECRET_KEY = "AbhinaysSuperKeyForRawEngine";
@@ -78,37 +62,9 @@ public class HttpRaw {
                     }
 
                     OutputStream output = clientSocket.getOutputStream();
-                    String response;
 
-                    if (path.equals("/")) {
-                        response = "HTTP/1.1 200 OK\r\n" +
-                                "Content-Type: text/plain\r\n" +
-                                "\r\n" +
-                                "Welcome to the Root Engine.";
-                    } else if (path.equals("/api/status")) {
-                        ServerStatus currentStatus = new ServerStatus();
-                        String jsonBody = toJson(currentStatus);
-                        response = "HTTP/1.1 200 OK\r\n" +
-                                "Content-Type: application/json\r\n" +
-                                "\r\n" +
-                                jsonBody;
-                    } else if (path.equals("/api/login")) {
-                        try {
-                            String rawToken = JwtEngine.generateToken("abhinay_rana");
-                            response = "HTTP/1.1 200 OK\r\n" +
-                                    "Content-Type: text/plain\r\n" +
-                                    "\r\n" +
-                                    rawToken;
-                        } catch (Exception e) {
-                            response = "HTTP/1.1 500 Internal Server Error\r\n\r\nCrypto Engine Failed.";
-                        }
-                    } else {
-                        response = "HTTP/1.1 404 Not Found\r\n" +
-                                "Content-Type: text/plain\r\n" +
-                                "\r\n" +
-                                "404 Error: The requested path does not exist.";
-                    }
-
+                    String method = requestParts[0];
+                    String response = Router.handleRoutes(method, path);
                     output.write(response.getBytes());
                     output.flush();
                 } catch (IOException e) {
