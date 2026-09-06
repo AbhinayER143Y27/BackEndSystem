@@ -18,15 +18,11 @@ class Main
                         InputStream stream = socket.getInputStream();
                         OutputStream output = socket.getOutputStream();
                         BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-
+                        ArrayList<String> collectedArgs = new ArrayList<>();
                         while (true) {
                             String line = reader.readLine();
                             if (line == null) break;
 
-                            if (line.equals("COMMAND")) {
-                                output.write("+OK\r\n".getBytes());
-                                output.flush();
-                            }
                             if (line.equals("exit")) {
                                 break;
                             }
@@ -34,7 +30,6 @@ class Main
                             if(line.startsWith("*"))
                             {
                                 int arrayNumber = Integer.parseInt(line.substring(1));
-                                ArrayList<String> collectedArgs = new ArrayList<>();
                                 for(int i = 0; i < 2 * arrayNumber; i++)
                                 {
                                     String insideLine = reader.readLine();
@@ -46,19 +41,36 @@ class Main
                                         collectedArgs.add(insideLine);
                                     }
                                 }
+                                if(collectedArgs.isEmpty()) continue;
 
-                                if(collectedArgs.get(0).equals("ECHO"))
+                                String command = collectedArgs.get(0).toUpperCase();
+
+                                switch (command)
                                 {
-                                    for(int i = 1; i < collectedArgs.size(); i++)
-                                    {
-                                        output.write(("$" + collectedArgs.get(i).length() + "\r\n").getBytes());
-                                        output.write((collectedArgs.get(i) + "\r\n").getBytes());
-                                    }
+                                    case "ECHO":
+                                        if(collectedArgs.size() != 2)
+                                        {
+                                            output.write(("-There must be 2 inputs for the command ECHO \r\n").getBytes());
+                                            output.flush();
+                                        }
+                                        else
+                                        {
+                                            output.write(("$" + collectedArgs.get(1).length() + "\r\n").getBytes());
+                                            output.write((collectedArgs.get(1) + "\r\n").getBytes());
+                                            System.out.println("The users request " + collectedArgs.get(1));
+                                            output.flush();
+                                        }
+                                        break;
+                                    case "PING":
+                                        output.write(("+PONG\r\n").getBytes());
+                                        output.flush();
+                                    default:
+                                        String error = "- Error unknown command " + command + "\r\n";
+                                        output.write((error).getBytes());
+                                        output.flush();
+                                        break;
                                 }
-                            }
-                            if (line.equals("PING")) {
-                                output.write("+PONG\r\n".getBytes());
-                                output.flush();
+                                collectedArgs.clear();
                             }
                             System.out.println("The users request: " + line);
                         }
