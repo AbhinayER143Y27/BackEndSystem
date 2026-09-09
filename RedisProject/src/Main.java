@@ -53,8 +53,6 @@ class Main
                 }
             }
         });
-
-
         try (ServerSocket serversocket = new ServerSocket(port)) {
 
             deletionThread.start();
