@@ -6,8 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 class Main
 {
-    private static ConcurrentHashMap<String, String> MainSets = new ConcurrentHashMap<>();
-    private static ConcurrentHashMap<String, Long> dataSets = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, RedisObject> MainSets = new ConcurrentHashMap<>(); // for the data without the expiration.
+    private static ConcurrentHashMap<String, Long> dataSets = new ConcurrentHashMap<>(); // for the data with the expiration.
 
     public static void main(String[] args) {
         int port = 6379;
@@ -30,6 +30,7 @@ class Main
                     }
                     if(time < System.currentTimeMillis())
                     {
+                        System.out.println(dataSets.get(x) + " is removed because of time limitations......");
                         dataSets.remove(x);
                         MainSets.remove(x);
                         aggressiveCounter++;
@@ -46,13 +47,15 @@ class Main
                 }
                 try {
                     System.out.println("Sleeping now...");
-                    Thread.sleep(3000);
+                    Thread.sleep(3000); //look at this the thread in here is the deletion thread which has to go to sleep
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
                 }
             }
         });
+
+
         try (ServerSocket serversocket = new ServerSocket(port)) {
 
             deletionThread.start();
@@ -115,7 +118,7 @@ class Main
                                         {
                                             Long timer = Long.parseLong(collectedArgs.get(4));
                                             dataSets.put(collectedArgs.get(1), timer + System.currentTimeMillis());
-                                            MainSets.put(collectedArgs.get(1), collectedArgs.get(2));
+                                            MainSets.put(collectedArgs.get(1), new RedisObject(RedisObject.Type.STRING, collectedArgs.get(2)));
                                             output.write(("+Ok\r\n").getBytes());
                                             output.flush();
                                         }
@@ -123,7 +126,7 @@ class Main
                                         {
                                             String key = collectedArgs.get(1);
                                             dataSets.remove(key);
-                                            MainSets.put(key, collectedArgs.get(2));
+                                            MainSets.put(key, new RedisObject(RedisObject.Type.STRING ,collectedArgs.get(2)));
                                             output.write(("+OK\r\n".getBytes()));
                                             output.flush();
                                         }
@@ -148,7 +151,9 @@ class Main
                                                 Long time = dataSets.get(key);
                                                 if(MainSets.containsKey(key) && !dataSets.containsKey(key))
                                                 {
-                                                    String value = MainSets.get(key);
+                                                    RedisObject getValue = MainSets.get(key);
+                                                    Object valueobject = getValue.payLoad;
+                                                    String value = String.valueOf(valueobject);
                                                     output.write(("$" + value.length() + "\r\n").getBytes());
                                                     output.write((value + "\r\n").getBytes());
                                                     output.flush();
@@ -163,7 +168,9 @@ class Main
                                                 }
                                                 else if(dataSets.containsKey(key) && time > System.currentTimeMillis())
                                                 {
-                                                    String value = MainSets.get(key);
+                                                    RedisObject getValue = MainSets.get(key);
+                                                    Object valueObject = getValue.payLoad;
+                                                    String value = String.valueOf(valueObject);
                                                     output.write(("$" + value.length() + "\r\n").getBytes());
                                                     output.write((value + "\r\n").getBytes());
                                                     output.flush();
@@ -204,5 +211,25 @@ class Main
         } catch(IOException e){
             System.out.println("Error : " + e.getMessage());
         }
+    }
+}
+
+class RedisObject
+{
+    enum Type
+    {
+        STRING,
+        LIST,
+        HASH,
+        SET
+    }
+
+    final Type type;
+    final Object payLoad;
+
+    public RedisObject(Type type ,Object payLoad)
+    {
+        this.type = type;
+        this.payLoad = payLoad;
     }
 }
