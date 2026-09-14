@@ -209,16 +209,40 @@ class Main
                                         break;
 
                                     case "LPUSH":
-                                        for(int i = 1; i < collectedArgs.size(); i++) {
-                                            listForLR.addFirst(collectedArgs.get(i));
+                                        String keyL = collectedArgs.get(1);
+                                        RedisObject existingL = MainSets.get(keyL);
+                                        Deque<String> listL;
+                                        if(existingL == null)
+                                        {
+                                            listL = new LinkedList<>();
+                                            MainSets.put(keyL, new RedisObject(RedisObject.Type.LIST ,listL));
+                                        }else{
+                                            listL = (Deque<String>) existingL.payLoad;
                                         }
-                                        output.write(("+OK\r\n").getBytes());
+                                        for(int i = 2; i < collectedArgs.size(); i++)
+                                        {
+                                            listL.addFirst(collectedArgs.get(i));
+                                        }
+                                        output.write(("+OK\r\n".getBytes()));
                                         output.flush();
                                         break;
 
                                     case "RPUSH":
-                                        for(int i = 1; i < collectedArgs.size(); i++) {
-                                            listForLR.addLast(collectedArgs.get(i));
+                                        String keyR = collectedArgs.get(1);
+                                        RedisObject existingR = MainSets.get(keyR);
+                                        Deque<String> listR;
+                                        if(existingR == null)
+                                        {
+                                            listR = new LinkedList<>();
+                                            MainSets.put(keyR, new RedisObject(RedisObject.Type.LIST, listR));
+                                        }
+                                        else
+                                        {
+                                            listR = (Deque<String>) existingR.payLoad;
+                                        }
+                                        for(int i = 2; i < collectedArgs.size(); i++)
+                                        {
+                                            listR.addLast(collectedArgs.get(i));
                                         }
                                         output.write(("+OK\r\n").getBytes());
                                         output.flush();
