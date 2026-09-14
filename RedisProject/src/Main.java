@@ -263,17 +263,57 @@ class Main
                                         output.write(("+OK\r\n").getBytes());
                                         output.flush();
                                         break;
+
                                     case "LPOP": // lpop means only one is ask for te pop not all so
-                                        String value = listForLR.pollFirst();
-                                        output.write(("$" + value.length() + "\r\n").getBytes());
-                                        output.write((value + "\r\n").getBytes());
+                                        String keyLP = collectedArgs.get(1);
+                                        RedisObject existingLP = MainSets.get(keyLP);
+                                        if(existingLP == null)
+                                        {
+                                            output.write(("$-1\r\n").getBytes());
+                                            output.flush();
+                                        }
+                                        else
+                                        {
+                                            Deque<String> listLP = (Deque<String>) existingLP.payLoad;
+                                            String value = listLP.pollFirst();
+                                            if(value == null)
+                                            {
+                                                output.write(("$-1\r\n").getBytes());
+                                                output.flush();
+                                            }
+                                            else
+                                            {
+                                                output.write(("$" + value.length() + "\r\n").getBytes());
+                                                output.write((value + "\r\n").getBytes());
+                                                output.flush();
+                                            }
+                                        }
                                         break;
 
                                     case "RPOP":
-                                        String valueR = listForLR.pollLast();
-                                        output.write(("$" + valueR.length() + "\r\n").getBytes());
-                                        output.write((valueR + "\r\n").getBytes());
-                                        output.flush();
+                                        String keyRP = collectedArgs.get(1);
+                                        RedisObject existingRP = MainSets.get(keyRP);
+                                        if(existingRP == null)
+                                        {
+                                            output.write(("$-1\r\n").getBytes());
+                                            output.flush();
+                                        }
+                                        else
+                                        {
+                                            Deque<String> listRP = (Deque<String>) existingRP.payLoad;
+                                            String valueRP = listRP.pollLast();
+                                            if(valueRP == null)
+                                            {
+                                                output.write(("$-1\r\n").getBytes());
+                                                output.flush();
+                                            }
+                                            else
+                                            {
+                                                output.write(("$" + valueRP.length() + "\r\n").getBytes());
+                                                output.write((valueRP + "\r\n").getBytes());
+                                                output.flush();
+                                            }
+                                        }
                                         break;
 
                                     case "PING":
