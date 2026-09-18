@@ -311,26 +311,46 @@ class Main
                                             RedisObject existingLange = MainSets.get(keyLange);
                                             if(existingLange == null)
                                             {
-                                                String langeElse = "This exits but is empty";
-                                                output.write(("$" + langeElse.length() +"\r\n").getBytes());
-                                                output.write((langeElse + "\r\n").getBytes());
+                                                output.write(("*0\r\n").getBytes());
                                                 output.flush();
                                             }
                                             else if(existingLange.type == RedisObject.Type.LIST)
                                             {
-                                                int startLange = Integer.parseInt(collectedArgs.get(2));
-                                                int endLange = Integer.parseInt(collectedArgs.get(3));
+                                                int startLange = 0;
+                                                int endLange = 0;
+                                                try{startLange = Integer.parseInt(collectedArgs.get(2));
+                                                    endLange = Integer.parseInt(collectedArgs.get(3));}
+                                                catch (NumberFormatException e)
+                                                {
+                                                    String mathEror = "input wasn't a valid integer.";
+                                                    output.write(("$" + mathEror.length() + "\r\n").getBytes());
+                                                    output.write((mathEror + "\r\n").getBytes());
+                                                    output.flush();
+                                                    break;
+                                                }
                                                 List<String> listLange = (List<String>)existingLange.payLoad;
 
                                                 if(startLange < 0)
                                                 {
                                                     startLange = listLange.size() + startLange;
                                                 }
+                                                if(startLange < 0)
+                                                {
+                                                    startLange = 0;
+                                                }
                                                 if(endLange < 0)
                                                 {
                                                     endLange = listLange.size() + endLange;
                                                 }
-                                                if(startLange > endLange) System.out.println("we will return an empty list but return will ig end the program.");
+                                                if(endLange < 0)
+                                                {
+                                                    endLange = 0;
+                                                }
+                                                if(startLange > endLange)
+                                                {
+                                                    output.write(("*0\r\n").getBytes());
+                                                    output.flush();
+                                                }
                                                 else if(startLange <= endLange)
                                                 {
                                                     int endPoint = Math.min(endLange, listLange.size() - 1);
@@ -346,7 +366,7 @@ class Main
                                             }
                                             else
                                             {
-                                                output.write(("$-1\r\n").getBytes());
+                                                output.write(("-WRONGTYPE Operation against a key holding the wrong kind of value\r\n").getBytes());
                                                 output.flush();
                                             }
                                         }
