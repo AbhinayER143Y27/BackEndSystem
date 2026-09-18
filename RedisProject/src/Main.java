@@ -333,9 +333,11 @@ class Main
                                                 if(startLange > endLange) System.out.println("we will return an empty list but return will ig end the program.");
                                                 else if(startLange <= endLange)
                                                 {
-                                                    for(int i = startLange; i < listLange.size(); i++)
+                                                    int endPoint = Math.min(endLange, listLange.size() - 1);
+                                                    int returnNum = endPoint - startLange + 1;
+                                                    output.write(("*" + returnNum + "\r\n").getBytes());
+                                                    for(int i = startLange; i <= endPoint; i++)
                                                     {
-                                                        if(i > endLange)break;
                                                         output.write(("$" + listLange.get(i).length() + "\r\n").getBytes());
                                                         output.write((listLange.get(i) + "\r\n").getBytes());
                                                     }
