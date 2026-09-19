@@ -110,27 +110,43 @@ class Main
                                         }
                                         break;
 
-                                    case "SET":
+                                    case "SET": // ex - seconds ,px - milli seconds
                                         int pxIndex = -1;
-                                        for (int i = 0; i < collectedArgs.size(); i++) {
+                                        int exIndex = -1;
+                                        for (int i = 3; i < collectedArgs.size(); i++) {
                                             if (collectedArgs.get(i).equalsIgnoreCase("PX")) {
                                                 pxIndex = i;
-                                                break;
+                                            }
+                                            if(collectedArgs.get(i).equalsIgnoreCase("EX"))
+                                            {
+                                                exIndex = i;
                                             }
                                         }
                                         Long Time;
-                                        if (pxIndex != -1 && collectedArgs.size() > pxIndex + 1) {
+                                        if (pxIndex != -1 && collectedArgs.size() > pxIndex + 1 && exIndex == -1) { // case for valid px
                                             // in this if && collectedArgs.size() > 3 this was added which was there now it is removed because what if set color px is written like this just a really great edge case in here for redis.
                                             Time = Long.parseLong(collectedArgs.get(pxIndex + 1));
                                             dataSets.put(collectedArgs.get(1), Time + System.currentTimeMillis());
                                             MainSets.put(collectedArgs.get(1), new RedisObject(RedisObject.Type.STRING, collectedArgs.get(2)));
                                             output.write(("+Ok\r\n").getBytes());
                                             output.flush();
-                                        } else if (pxIndex == -1 && collectedArgs.size() >= 3) {
+                                        }
+                                        else if (exIndex != -1 && collectedArgs.size() > exIndex + 1 && pxIndex == -1)// case for valid ex
+                                        {
+                                            Time = Long.parseLong(collectedArgs.get(exIndex + 1));
+                                            dataSets.put(collectedArgs.get(1),((Time * 1000) + System.currentTimeMillis()));
+                                            MainSets.put(collectedArgs.get(1), new RedisObject(RedisObject.Type.STRING, collectedArgs.get(2)));
+                                            output.write(("+Ok\r\n").getBytes());
+                                            output.flush();
+                                        }
+                                        else if (pxIndex == -1 && collectedArgs.size() == 3 && exIndex == -1 ) { // valid case for the set name abhinay
                                             String key = collectedArgs.get(1);
                                             dataSets.remove(key);
                                             MainSets.put(key, new RedisObject(RedisObject.Type.STRING, collectedArgs.get(2)));
                                             output.write(("+OK\r\n".getBytes()));
+                                            output.flush();
+                                        } else if (pxIndex != -1 && exIndex != -1) {
+                                            output.write(("-ERR syntax error\r\n").getBytes());
                                             output.flush();
                                         } else {
                                             output.write(("-There is problem in the manner of your writing.\r\n").getBytes());
@@ -393,20 +409,6 @@ class Main
                                         }
                                         break;
 
-                                    case "EXISTS":
-                                        int countExist = 0;
-                                        for(int i = 1; i < collectedArgs.size(); i++)
-                                        {
-                                            String keyExist = collectedArgs.get(i);
-                                            if(MainSets.containsKey(keyExist))
-                                            {
-                                                countExist++;
-                                            }
-                                        }
-                                        output.write((":" + countExist + "\r\n").getBytes());
-                                        output.flush();
-                                        break;
-
                                     case "DEL":
                                         int counterDel = 0;
                                         for(int i = 1; i < collectedArgs.size(); i++)
@@ -421,6 +423,56 @@ class Main
                                         }
                                         output.write((":" + counterDel + "\r\n").getBytes());
                                         output.flush();
+                                        break;
+
+                                    case "EXISTS":
+                                        int countExist = 0;
+                                        for(int i = 1; i < collectedArgs.size(); i++)
+                                        {
+                                            String keyExist = collectedArgs.get(i);
+                                            if(MainSets.containsKey(keyExist))
+                                            {
+                                                countExist++;
+                                            }
+                                        }
+                                        output.write((":" + countExist + "\r\n").getBytes());
+                                        output.flush();
+                                        break;
+
+                                    case "TTL": // -1 no expiry    -2 not found
+                                        if(collectedArgs.size() != 2)
+                                        {
+                                            output.write(("-Wrong amount of arguments given.\r\n").getBytes());
+                                            output.flush();
+                                            break;
+                                        }
+                                        String keyTTL = collectedArgs.get(1);
+                                        if(MainSets.containsKey(keyTTL) && !dataSets.containsKey(keyTTL))
+                                        {
+                                            output.write((":-1\r\n").getBytes());
+                                            output.flush();
+                                        }
+                                        else if(MainSets.containsKey(keyTTL) && dataSets.containsKey(keyTTL))
+                                        {
+                                            Long existingTime =  dataSets.get(keyTTL);
+                                            Long existingTimeCurrent = (existingTime - System.currentTimeMillis())/1000;
+                                            if(existingTimeCurrent > 0)
+                                            {
+                                                output.write((":" + existingTimeCurrent + "\r\n").getBytes());
+                                                output.flush();
+                                            }
+                                            else
+                                            {
+                                                MainSets.remove(keyTTL);
+                                                dataSets.remove(keyTTL);
+                                                output.write((":-2\r\n").getBytes());
+                                                output.flush();
+                                            }
+                                        }
+                                        else {
+                                            output.write((":-2\r\n").getBytes());
+                                            output.flush();
+                                        }
                                         break;
 
                                     case "PING":
