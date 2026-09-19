@@ -409,6 +409,21 @@ class Main
                                         output.flush();
                                         break;
 
+                                    case "EXISTS":
+                                        int countExist = 0;
+                                        for(int i = 1; i < collectedArgs.size(); i++)
+                                        {
+                                            String keyExist = collectedArgs.get(i);
+                                            if(MainSets.containsKey(keyExist))
+                                            {
+                                                countExist++;
+                                            }
+                                        }
+                                        output.write((":" + countExist + "\r\n").getBytes());
+                                        output.flush();
+                                        break;
+
+
                                     case "PING":
                                         output.write(("+PONG\r\n").getBytes());
                                         output.flush();
