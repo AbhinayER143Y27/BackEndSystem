@@ -623,4 +623,21 @@ class RedisObject
         this.type = type;
         this.payLoad = payLoad;
     }
+
+    public boolean equals(Object other)
+    {
+        if(this == other) return true; // two references pointing to the same object.
+
+        if (other == null || getClass() != other.getClass()) { // deciding that two objects are not equal
+            return false;
+        }
+
+        RedisObject obj = (RedisObject) other; //this doesn't give the other access to the same object it gives the another reference of the  object but with more specific type.
+        return type == obj.type && Objects.equals(payLoad,obj.payLoad);
+    }
+
+    @Override
+    public int hashCode(){
+        return Objects.hash(type, payLoad);
+    }
 }
